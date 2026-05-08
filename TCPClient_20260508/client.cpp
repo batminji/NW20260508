@@ -9,6 +9,14 @@ int main()
 		return 1;
 	}
 
+	hostent* HostInfo = gethostbyname("login.calculate.edu");
+
+	char ServerIP[1024] = { 0, };
+	IN_ADDR Addr;
+	Addr.s_addr = *(ULONG*)*HostInfo->h_addr_list;
+	sprintf_s(ServerIP, "%s", inet_ntoa(Addr));
+	printf("%s\n", ServerIP);
+
 	SOCKET ServerSocket = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (ServerSocket == INVALID_SOCKET)
 	{
@@ -20,7 +28,7 @@ int main()
 	memset(&ServerSocketAddr, 0, sizeof(ServerSocketAddr));
 	ServerSocketAddr.sin_family = AF_INET;
 	// ListenSocketAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-	if (!inet_pton(AF_INET, "127.0.0.1", (PVOID)&ServerSocketAddr.sin_addr.s_addr))
+	if (!inet_pton(AF_INET, ServerIP, (PVOID)&ServerSocketAddr.sin_addr.s_addr))
 	{
 		printf("inet_pton Error\n");
 		exit(-1);
@@ -153,7 +161,7 @@ int main()
 
 		Result = ntohll(Result);
 
-		printf("%s=%lld\n", Message, Result);
+		printf("=%lld\n", Result);
 	}
 
 	closesocket(ServerSocket);

@@ -16,7 +16,7 @@ int main()
 	}
 
 	SOCKADDR_IN ListenSocketAddr;
-	memset(&ListenSocket, sizeof(ListenSocket), 0);
+	memset(&ListenSocketAddr, 0, sizeof(ListenSocketAddr));
 	ListenSocketAddr.sin_family = AF_INET;
 	if(!inet_pton(AF_INET, "127.0.0.1", (PVOID)&ListenSocketAddr.sin_addr.s_addr))
 	{
@@ -118,7 +118,6 @@ int main()
 			// Packet Parsing
 			// User Buffer -> OS TCP Buffer - Nagle Algorithm
 			PacketHeader SendHeader;
-			char Message[1024] = { 0, };
 			int WantSendBytes = sizeof(SendHeader);
 			int SentBytes = 0;
 			int TotalSentBytes = 0;
@@ -138,7 +137,6 @@ int main()
 			} while (TotalSentBytes < WantSendBytes);
 
 			Result = htonll(Result);
-			sprintf_s(Message, "%lld", Result);
 
 			WantSendBytes = sizeof(Result);
 			SentBytes = 0;
