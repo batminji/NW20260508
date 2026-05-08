@@ -41,15 +41,55 @@ int main()
 
 		int FirstNumber = rand() % 9999 + 1;
 		int SecondNumber = rand() % 9999 + 1;
-		int RandomOperationIndex = rand() % 4;
-		sprintf_s(Message, "%d%c%d", FirstNumber, Operation[RandomOperationIndex], SecondNumber);
+		unsigned short RandomOperationIndex = rand() % 4;
 
-		int WantSendBytes = TOTAL_PACKET_SIZE;
+		PacketHeader Header;
+		Header.Size = 0;
+		Header.Code = static_cast<unsigned short>(RandomOperationIndex);
+
+		int Temp = htonl(FirstNumber);
+		int DataCursor = 0;
+		memcpy(&Message[DataCursor], &Temp, sizeof(int));
+		DataCursor += sizeof(int);
+
+		Temp = htonl(SecondNumber);
+		memcpy(&Message[DataCursor], &Temp, sizeof(int));
+		DataCursor += sizeof(int);
+
+		Header.Size = DataCursor;
+
+		Header.Size = htons(Header.Size);
+		Header.Code = htons(Header.Code);
+
+		// sprintf_s(Message, "%d%c%d", FirstNumber, Operation[RandomOperationIndex], SecondNumber);
+
+		// Header
+		int WantSendBytes = TOTAL_HEADER_SIZE;
 		int SentBytes = 0;
 		int TotalSentBytes = 0;
 		do
 		{
-			SentBytes = send(ServerSocket, &Message[TotalSentBytes], WantSendBytes - TotalSentBytes, 0);
+			SentBytes = send(ServerSocket, (char*)&Header + TotalSentBytes, WantSendBytes - TotalSentBytes, 0);
+			if (SentBytes == 0)
+			{
+				printf("Connection Closed\n");
+				exit(-1);
+			}
+			else if (SentBytes < 0)
+			{
+				printf("Send Error\n");
+				exit(-1);
+			}
+			TotalSentBytes += SentBytes;
+		} while (TotalSentBytes < WantSendBytes);
+
+		// Data
+		WantSendBytes = DataCursor;
+		SentBytes = 0;
+		TotalSentBytes = 0;
+		do
+		{
+			SentBytes = send(ServerSocket, (char*)&Message[TotalSentBytes], WantSendBytes - TotalSentBytes, 0);
 			if (SentBytes == 0)
 			{
 				printf("Connection Closed\n");
@@ -64,10 +104,12 @@ int main()
 		} while (TotalSentBytes < WantSendBytes);
 
 		char Buffer[1024] = { 0, };
-		int WantRecvBytes = TOTAL_PACKET_SIZE;
+		int WantRecvBytes = TOTAL_HEADER_SIZE;
 		int RecvBytes;
 
-		RecvBytes = recv(ServerSocket, Buffer, WantRecvBytes, MSG_WAITALL);
+		PacketHeader RecvHeader;
+
+		RecvBytes = recv(ServerSocket, (char*)&RecvHeader, WantRecvBytes, MSG_WAITALL);
 		if (RecvBytes == 0)
 		{
 			printf("Connection Closed\n");
@@ -78,6 +120,34 @@ int main()
 			printf("Recv Error\n");
 			exit(-1);
 		}
+
+		RecvHeader.Size = ntohs(RecvHeader.Size);
+		RecvHeader.Code = ntohs(RecvHeader.Code);
+
+		if(RecvHeader.Code != static_cast<unsigned short>(EPacketType::Result))
+		{
+			printf("Invalid Packet Code\n");
+			exit(-1);
+		}
+
+		WantRecvBytes = RecvHeader.Size;
+		RecvBytes;
+
+		RecvBytes = recv(ServerSocket, (char*)&Buffer, WantRecvBytes, MSG_WAITALL);
+		if (RecvBytes == 0)
+		{
+			printf("Connection Closed\n");
+			exit(-1);
+		}
+		else if (RecvBytes < 0)
+		{
+			printf("Recv Error\n");
+			exit(-1);
+		}
+
+		long long Result = 0;
+		memcpy(&Result, Buffer, sizeof(long long));
+		Result = ntohll(Result);
 
 		printf("%s=%s\n", Message, Buffer);
 	}
