@@ -34,49 +34,51 @@ int main()
 
 	connect(ServerSocket, (SOCKADDR*)&ServerSocketAddr, sizeof(ServerSocketAddr));
 
-	char Message[1024] = { 0, };
-
-	int FirstNumber = rand() % 99 + 1;
-	int SecondNumber = rand() % 99 + 1;
-	sprintf_s(Message, "%2d+%2d", FirstNumber, SecondNumber);
-
-	int WantSendBytes = 5;
-	int SentBytes = 0;
-	int TotalSentBytes = 0;
-	do
+	while (true)
 	{
-		SentBytes = send(ServerSocket, &Message[TotalSentBytes], WantSendBytes - TotalSentBytes, 0);
-		if (SentBytes == 0)
+		char Message[1024] = { 0, };
+
+		int FirstNumber = rand() % 99 + 1;
+		int SecondNumber = rand() % 99 + 1;
+		sprintf_s(Message, "%2d+%2d", FirstNumber, SecondNumber);
+
+		int WantSendBytes = 5;
+		int SentBytes = 0;
+		int TotalSentBytes = 0;
+		do
+		{
+			SentBytes = send(ServerSocket, &Message[TotalSentBytes], WantSendBytes - TotalSentBytes, 0);
+			if (SentBytes == 0)
+			{
+				printf("Connection Closed\n");
+				exit(-1);
+			}
+			else if (SentBytes < 0)
+			{
+				printf("Send Error\n");
+				exit(-1);
+			}
+			TotalSentBytes += SentBytes;
+		} while (TotalSentBytes < WantSendBytes);
+
+		char Buffer[1024] = { 0, };
+		int WantRecvBytes = 5;
+		int RecvBytes;
+
+		RecvBytes = recv(ServerSocket, Buffer, WantRecvBytes, MSG_WAITALL);
+		if (RecvBytes == 0)
 		{
 			printf("Connection Closed\n");
 			exit(-1);
 		}
-		else if (SentBytes < 0)
+		else if (RecvBytes < 0)
 		{
-			printf("Send Error\n");
+			printf("Recv Error\n");
 			exit(-1);
 		}
-		TotalSentBytes += SentBytes;
-	}
-	while (TotalSentBytes < WantSendBytes);
 
-	char Buffer[1024] = { 0, };
-	int WantRecvBytes = 5;
-	int RecvBytes;
-
-	RecvBytes = recv(ServerSocket, Buffer, WantRecvBytes, MSG_WAITALL);
-	if (RecvBytes == 0)
-	{
-		printf("Connection Closed\n");
-		exit(-1);
+		printf("%s=%s\n", Message, Buffer);
 	}
-	else if (RecvBytes < 0)
-	{
-		printf("Recv Error\n");
-		exit(-1);
-	}
-
-	printf("RecvBytes: %d, Message: %s\n", RecvBytes, Buffer);
 
 	closesocket(ServerSocket);
 

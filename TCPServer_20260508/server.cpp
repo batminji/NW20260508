@@ -21,9 +21,8 @@ int main()
 	}
 
 	SOCKADDR_IN ListenSocketAddr;
-	memset(&ListenSocket, sizeof(ListenSocket), 0);		// ZeroMemory(&ListenSocket, sizeof(ListenSocket), 0);
+	memset(&ListenSocket, sizeof(ListenSocket), 0);
 	ListenSocketAddr.sin_family = AF_INET;
-	// ListenSocketAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
 	if(!inet_pton(AF_INET, "127.0.0.1", (PVOID)&ListenSocketAddr.sin_addr.s_addr))
 	{
 		std::cout << "inet_pton Error" << std::endl;
@@ -61,50 +60,58 @@ int main()
 			exit(-1);
 		}
 
-		char Buffer[1024] = { 0, };
-		// Full Duplex Communication
-		int RecvBytes;
-		int WantRecvBytes = 5;
-		RecvBytes = recv(ClientSocket, Buffer, WantRecvBytes, MSG_WAITALL);		// OS TCP Buffer -> User Buffer
-		if (RecvBytes == 0)
+		while (true)
 		{
-			// Connection Closed
-		}
-		else if (RecvBytes < 0)
-		{
-			std::cout << "Recv Error" << std::endl;
-			exit(-1);
-		}
-
-		// Process
-		std::string Packet(Buffer);
-		std::string FistNumber = Packet.substr(0, Packet.find('+'));
-		std::string SecondNumber = Packet.substr(Packet.find('+') + 1, 2);
-
-		printf("%s + %s = %d\n", FistNumber.c_str(), SecondNumber.c_str(), atoi(FistNumber.c_str()) + atoi(SecondNumber.c_str()));
-
-		// Packet Parsing
-		// User Buffer -> OS TCP Buffer - Nagle Algorithm
-		char Message[1024] = { 0, };
-		int WantSendBytes = 5;
-		int SentBytes = 0;
-		int TotalSentBytes = 0;
-		do
-		{
-			SentBytes = send(ClientSocket, &Message[TotalSentBytes], WantSendBytes - TotalSentBytes, 0);
-			if (SentBytes == 0)
+			char Buffer[1024] = { 0, };
+			// Full Duplex Communication
+			int RecvBytes;
+			int WantRecvBytes = 5;
+			RecvBytes = recv(ClientSocket, Buffer, WantRecvBytes, MSG_WAITALL);		// OS TCP Buffer -> User Buffer
+			if (RecvBytes == 0)
 			{
-				printf("Connection Closed\n");
+				// Connection Closed
+			}
+			else if (RecvBytes < 0)
+			{
+				std::cout << "Recv Error" << std::endl;
 				exit(-1);
 			}
-			else if (SentBytes < 0)
-			{
-				printf("Send Error\n");
-				exit(-1);
-			}
-			TotalSentBytes += SentBytes;
-		} while (TotalSentBytes < WantSendBytes);
 
+			// Process
+			std::string Packet(Buffer);
+			int OperatiorIndex = static_cast<int>(Packet.find('+'));
+			std::string FirstStringNumber = Packet.substr(0, OperatiorIndex);
+			std::string SecondStringNumber = Packet.substr(OperatiorIndex + 1, 2);
+			int FirstNumber = atoi(FirstStringNumber.c_str());
+			int SecondNumber = atoi(SecondStringNumber.c_str());
+
+			// printf("%s + %s = %d\n", FistNumber.c_str(), SecondNumber.c_str(), atoi(FistNumber.c_str()) + atoi(SecondNumber.c_str()));
+
+			// Packet Parsing
+			// User Buffer -> OS TCP Buffer - Nagle Algorithm
+			char Message[1024] = { 0, };
+			int WantSendBytes = 5;
+			int SentBytes = 0;
+			int TotalSentBytes = 0;
+
+			sprintf_s(Message, "%d", FirstNumber + SecondNumber);
+
+			do
+			{
+				SentBytes = send(ClientSocket, &Message[TotalSentBytes], WantSendBytes - TotalSentBytes, 0);
+				if (SentBytes == 0)
+				{
+					printf("Connection Closed\n");
+					exit(-1);
+				}
+				else if (SentBytes < 0)
+				{
+					printf("Send Error\n");
+					exit(-1);
+				}
+				TotalSentBytes += SentBytes;
+			} while (TotalSentBytes < WantSendBytes);
+		}
 		shutdown(ClientSocket, SD_BOTH);
 		closesocket(ClientSocket);
 	}
