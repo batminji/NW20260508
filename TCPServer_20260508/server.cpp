@@ -64,7 +64,8 @@ int main()
 		char Buffer[1024] = { 0, };
 		// Full Duplex Communication
 		int RecvBytes;
-		RecvBytes = recv(ClientSocket, Buffer, sizeof(Buffer), 0);		// OS TCP Buffer -> User Buffer
+		int WantRecvBytes = 5;
+		RecvBytes = recv(ClientSocket, Buffer, WantRecvBytes, MSG_WAITALL);		// OS TCP Buffer -> User Buffer
 		if (RecvBytes == 0)
 		{
 			// Connection Closed
@@ -75,19 +76,34 @@ int main()
 			exit(-1);
 		}
 
+		// Process
+		std::string Packet(Buffer);
+		std::string FistNumber = Packet.substr(0, Packet.find('+'));
+		std::string SecondNumber = Packet.substr(Packet.find('+') + 1, 2);
+
+		printf("%s + %s = %d\n", FistNumber.c_str(), SecondNumber.c_str(), atoi(FistNumber.c_str()) + atoi(SecondNumber.c_str()));
+
 		// Packet Parsing
 		// User Buffer -> OS TCP Buffer - Nagle Algorithm
-		int SendBytes;
-		SendBytes = send(ClientSocket, Buffer, RecvBytes, 0);
-		if (SendBytes == 0)
+		char Message[1024] = { 0, };
+		int WantSendBytes = 5;
+		int SentBytes = 0;
+		int TotalSentBytes = 0;
+		do
 		{
-			// OS Buffer에 담지 못함.
-		}
-		else if (SendBytes < 0)
-		{
-			std::cout << "Send Error" << std::endl;
-			exit(-1);
-		}
+			SentBytes = send(ClientSocket, &Message[TotalSentBytes], WantSendBytes - TotalSentBytes, 0);
+			if (SentBytes == 0)
+			{
+				printf("Connection Closed\n");
+				exit(-1);
+			}
+			else if (SentBytes < 0)
+			{
+				printf("Send Error\n");
+				exit(-1);
+			}
+			TotalSentBytes += SentBytes;
+		} while (TotalSentBytes < WantSendBytes);
 
 		shutdown(ClientSocket, SD_BOTH);
 		closesocket(ClientSocket);

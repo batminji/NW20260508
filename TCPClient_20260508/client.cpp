@@ -7,7 +7,7 @@
 
 int main()
 {
-	srand((USHORT)time(NULL));
+	srand((unsigned int)time(nullptr));
 	WSAData wsaData;
 	if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
 	{
@@ -27,7 +27,7 @@ int main()
 	// ListenSocketAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
 	if (!inet_pton(AF_INET, "127.0.0.1", (PVOID)&ServerSocketAddr.sin_addr.s_addr))
 	{
-		std::cout << "inet_pton Error" << std::endl;
+		printf("inet_pton Error\n");
 		exit(-1);
 	}
 	ServerSocketAddr.sin_port = htons(9000);
@@ -38,29 +38,47 @@ int main()
 
 	int FirstNumber = rand() % 99 + 1;
 	int SecondNumber = rand() % 99 + 1;
+	sprintf_s(Message, "%2d+%2d", FirstNumber, SecondNumber);
 
-	int SendBytes;
-	SendBytes = send(ServerSocket, Message, sizeof(Message), 0);
-	if (SendBytes == 0)
+	int WantSendBytes = 5;
+	int SentBytes = 0;
+	int TotalSentBytes = 0;
+	do
 	{
+		SentBytes = send(ServerSocket, &Message[TotalSentBytes], WantSendBytes - TotalSentBytes, 0);
+		if (SentBytes == 0)
+		{
+			printf("Connection Closed\n");
+			exit(-1);
+		}
+		else if (SentBytes < 0)
+		{
+			printf("Send Error\n");
+			exit(-1);
+		}
+		TotalSentBytes += SentBytes;
 	}
-	else if (SendBytes < 0)
-	{
-		std::cout << "Send Error" << std::endl;
-		exit(-1);
-	}
+	while (TotalSentBytes < WantSendBytes);
 
+	char Buffer[1024] = { 0, };
+	int WantRecvBytes = 5;
 	int RecvBytes;
-	RecvBytes = recv(ServerSocket, Message, sizeof(Message), 0);
+
+	RecvBytes = recv(ServerSocket, Buffer, WantRecvBytes, MSG_WAITALL);
 	if (RecvBytes == 0)
 	{
-		// Connection Closed
+		printf("Connection Closed\n");
+		exit(-1);
 	}
 	else if (RecvBytes < 0)
 	{
-		std::cout << "Recv Error" << std::endl;
+		printf("Recv Error\n");
 		exit(-1);
 	}
+
+	printf("RecvBytes: %d, Message: %s\n", RecvBytes, Buffer);
+
+	closesocket(ServerSocket);
 
 	WSACleanup();
 }
