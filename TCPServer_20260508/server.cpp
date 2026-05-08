@@ -83,10 +83,10 @@ int main()
 
 			// Process
 			std::string Packet(Buffer);
-			int OperatorIndex;
-			for(int i = 0; i < 4; i++)
+			int OperatorIndex = 0;
+			for(const auto& c : Operation)
 			{
-				OperatorIndex = static_cast<int>(Packet.find(Operation[i]));
+				OperatorIndex = static_cast<int>(Packet.find(c));
 				if (OperatorIndex != std::string::npos)
 				{
 					break;
