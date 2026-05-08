@@ -1,13 +1,4 @@
-﻿#define _WINSOCK_DEPRECATED_NO_WARNINGS
-#include <iostream>
-#include <WinSock2.h>
-#include <WS2tcpip.h>
-
-#pragma comment(lib, "ws2_32")
-
-#define TOTAL_PACKET_SIZE 9
-
-constexpr char Operation[4] = { '+', '-', '*', '/' };
+﻿#include "stdafx.h"
 
 int main()
 {
@@ -80,15 +71,15 @@ int main()
 			else if (RecvBytes < 0)
 			{
 				printf("Recv Error\n");
-				exit(-1);
+				break;
 			}
 
 			// Process
 			std::string Packet(Buffer);
 			int OperatorIndex = 0;
-			for(const auto& c : Operation)
+			for(const auto& Oper : Operation)
 			{
-				OperatorIndex = static_cast<int>(Packet.find(c));
+				OperatorIndex = static_cast<int>(Packet.find(Oper));
 				if (OperatorIndex != std::string::npos)
 				{
 					break;
@@ -129,15 +120,10 @@ int main()
 			do
 			{
 				SentBytes = send(ClientSocket, &Message[TotalSentBytes], WantSendBytes - TotalSentBytes, 0);
-				if (SentBytes == 0)
+				if (SentBytes <= 0)
 				{
 					printf("Client Connection Closed\n");
 					break;
-				}
-				else if (SentBytes < 0)
-				{
-					printf("Send Error\n");
-					exit(-1);
 				}
 				TotalSentBytes += SentBytes;
 			} while (TotalSentBytes < WantSendBytes);
