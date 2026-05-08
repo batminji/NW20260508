@@ -63,7 +63,7 @@ int main()
 			// Full Duplex Communication
 			int RecvBytes;
 			int WantRecvBytes = TOTAL_HEADER_SIZE;
-			RecvBytes = recv(ClientSocket, (char*)&Header, TOTAL_HEADER_SIZE, MSG_WAITALL);
+			RecvBytes = recv(ClientSocket, (char*)&Header, WantRecvBytes, MSG_WAITALL);
 			if (RecvBytes == 0)
 			{
 				// Connection Closed
@@ -80,25 +80,20 @@ int main()
 			Header.Code = ntohs(Header.Code);
 
 			// Process
-			std::string Packet(Buffer);
-			int OperatorIndex = 0;
-			for(const auto& Oper : Operation)
-			{
-				OperatorIndex = static_cast<int>(Packet.find(Oper));
-				if (OperatorIndex != std::string::npos)
-				{
-					break;
-				}
-			}
-			std::string FirstStringNumber = Packet.substr(0, OperatorIndex);
-			std::string SecondStringNumber = Packet.substr(OperatorIndex + 1, Packet.length() - OperatorIndex - 1);
-			int FirstNumber = atoi(FirstStringNumber.c_str());
-			int SecondNumber = atoi(SecondStringNumber.c_str());
-
-			// printf("%s + %s = %d\n", FistNumber.c_str(), SecondNumber.c_str(), atoi(FistNumber.c_str()) + atoi(SecondNumber.c_str()));
-
 			TwoNumber Data;
-			recv(ClientSocket, (char*)&Data, Header.Size, MSG_WAITALL);
+			RecvBytes = recv(ClientSocket, (char*)&Data, Header.Size, MSG_WAITALL);
+			if (RecvBytes == 0)
+			{
+				// Connection Closed
+				printf("Client Connection Closed\n");
+				break;
+			}
+			else if (RecvBytes < 0)
+			{
+				printf("Recv Error\n");
+				break;
+			}
+
 			Data.FirstNumber = ntohs(Data.FirstNumber);
 			Data.SecondNumber = ntohs(Data.SecondNumber);
 
@@ -128,7 +123,7 @@ int main()
 			int TotalSentBytes = 0;
 
 			PacketHeader SendHeader;
-			SendHeader.Size = htons(sizeof(Message));
+			SendHeader.Size = htons(sizeof(Result));
 			SendHeader.Code = htons(static_cast<unsigned short>(EPacketType::Result));
 
 			do
