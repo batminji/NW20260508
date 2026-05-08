@@ -62,7 +62,7 @@ int main()
 			char Buffer[1024] = { 0, };
 			// Full Duplex Communication
 			int RecvBytes;
-			int WantRecvBytes = TOTAL_HEADER_SIZE;
+			int WantRecvBytes = sizeof(Header);
 			RecvBytes = recv(ClientSocket, (char*)&Header, WantRecvBytes, MSG_WAITALL);
 			if (RecvBytes == 0)
 			{
@@ -94,8 +94,8 @@ int main()
 				break;
 			}
 
-			Data.FirstNumber = ntohs(Data.FirstNumber);
-			Data.SecondNumber = ntohs(Data.SecondNumber);
+			Data.FirstNumber = ntohl(Data.FirstNumber);
+			Data.SecondNumber = ntohl(Data.SecondNumber);
 
 			long long Result = 0;
 			switch (static_cast<EPacketType>(Header.Code))
@@ -117,12 +117,12 @@ int main()
 			// Send
 			// Packet Parsing
 			// User Buffer -> OS TCP Buffer - Nagle Algorithm
+			PacketHeader SendHeader;
 			char Message[1024] = { 0, };
-			int WantSendBytes = TOTAL_PACKET_SIZE;
+			int WantSendBytes = sizeof(SendHeader);
 			int SentBytes = 0;
 			int TotalSentBytes = 0;
 
-			PacketHeader SendHeader;
 			SendHeader.Size = htons(sizeof(Result));
 			SendHeader.Code = htons(static_cast<unsigned short>(EPacketType::Result));
 

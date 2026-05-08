@@ -12,8 +12,7 @@ enum class EPacketType : unsigned short
 	Max
 };
 
-#define TOTAL_HEADER_SIZE 4
-
+#pragma pack(push, 1)
 struct PacketHeader
 {
 	unsigned short Size;
@@ -25,5 +24,6 @@ struct TwoNumber
 	int FirstNumber;
 	int SecondNumber;
 };
+#pragma pack(pop)
 
 #endif // __PROTOCOL_H

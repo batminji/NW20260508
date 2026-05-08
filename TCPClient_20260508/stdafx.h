@@ -7,6 +7,5 @@
 
 #pragma comment(lib, "ws2_32")
 
-#define TOTAL_PACKET_SIZE 9
-
+#define RANDOM_NUMBER_MAX 9999
 constexpr char Operation[4] = { '+', '-', '*', '/' };
