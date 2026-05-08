@@ -5,6 +5,10 @@
 
 #pragma comment(lib, "ws2_32")
 
+#define TOTAL_PACKET_SIZE 9
+
+constexpr char Operation[4] = { '+', '-', '*', '/' };
+
 int main()
 {
 	srand((unsigned int)time(nullptr));
@@ -38,11 +42,12 @@ int main()
 	{
 		char Message[1024] = { 0, };
 
-		int FirstNumber = rand() % 99 + 1;
-		int SecondNumber = rand() % 99 + 1;
-		sprintf_s(Message, "%2d+%2d", FirstNumber, SecondNumber);
+		int FirstNumber = rand() % 9999 + 1;
+		int SecondNumber = rand() % 9999 + 1;
+		int RandomOperationIndex = rand() % 4;
+		sprintf_s(Message, "%d%c%d", FirstNumber, Operation[RandomOperationIndex], SecondNumber);
 
-		int WantSendBytes = 5;
+		int WantSendBytes = TOTAL_PACKET_SIZE;
 		int SentBytes = 0;
 		int TotalSentBytes = 0;
 		do
@@ -62,7 +67,7 @@ int main()
 		} while (TotalSentBytes < WantSendBytes);
 
 		char Buffer[1024] = { 0, };
-		int WantRecvBytes = 5;
+		int WantRecvBytes = TOTAL_PACKET_SIZE;
 		int RecvBytes;
 
 		RecvBytes = recv(ServerSocket, Buffer, WantRecvBytes, MSG_WAITALL);

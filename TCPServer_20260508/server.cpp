@@ -5,6 +5,10 @@
 
 #pragma comment(lib, "ws2_32")
 
+#define TOTAL_PACKET_SIZE 9
+
+constexpr char Operation[4] = { '+', '-', '*', '/' };
+
 int main()
 {
 	WSAData wsaData;
@@ -65,7 +69,7 @@ int main()
 			char Buffer[1024] = { 0, };
 			// Full Duplex Communication
 			int RecvBytes;
-			int WantRecvBytes = 5;
+			int WantRecvBytes = TOTAL_PACKET_SIZE;
 			RecvBytes = recv(ClientSocket, Buffer, WantRecvBytes, MSG_WAITALL);		// OS TCP Buffer -> User Buffer
 			if (RecvBytes == 0)
 			{
@@ -79,9 +83,17 @@ int main()
 
 			// Process
 			std::string Packet(Buffer);
-			int OperatiorIndex = static_cast<int>(Packet.find('+'));
-			std::string FirstStringNumber = Packet.substr(0, OperatiorIndex);
-			std::string SecondStringNumber = Packet.substr(OperatiorIndex + 1, 2);
+			int OperatorIndex;
+			for(int i = 0; i < 4; i++)
+			{
+				OperatorIndex = static_cast<int>(Packet.find(Operation[i]));
+				if (OperatorIndex != std::string::npos)
+				{
+					break;
+				}
+			}
+			std::string FirstStringNumber = Packet.substr(0, OperatorIndex);
+			std::string SecondStringNumber = Packet.substr(OperatorIndex + 1, Packet.length() - OperatorIndex - 1);
 			int FirstNumber = atoi(FirstStringNumber.c_str());
 			int SecondNumber = atoi(SecondStringNumber.c_str());
 
@@ -90,11 +102,27 @@ int main()
 			// Packet Parsing
 			// User Buffer -> OS TCP Buffer - Nagle Algorithm
 			char Message[1024] = { 0, };
-			int WantSendBytes = 5;
+			int WantSendBytes = TOTAL_PACKET_SIZE;
 			int SentBytes = 0;
 			int TotalSentBytes = 0;
 
-			sprintf_s(Message, "%d", FirstNumber + SecondNumber);
+			int Result = 0;
+			switch (Buffer[OperatorIndex])
+			{
+			case '+':
+				Result = FirstNumber + SecondNumber;
+				break;
+			case '-':
+				Result = FirstNumber - SecondNumber;
+				break;
+			case '*':
+				Result = FirstNumber * SecondNumber;
+				break;
+			case '/':
+				Result = FirstNumber / SecondNumber;
+				break;
+			}
+			sprintf_s(Message, "%d", Result);
 
 			do
 			{
