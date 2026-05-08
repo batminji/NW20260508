@@ -26,7 +26,7 @@ int main()
 	}
 
 	SOCKADDR_IN ServerSocketAddr;
-	memset(&ServerSocket, sizeof(ServerSocket), 0);
+	memset(&ServerSocketAddr, 0, sizeof(ServerSocketAddr));
 	ServerSocketAddr.sin_family = AF_INET;
 	// ListenSocketAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
 	if (!inet_pton(AF_INET, "127.0.0.1", (PVOID)&ServerSocketAddr.sin_addr.s_addr))
@@ -36,7 +36,13 @@ int main()
 	}
 	ServerSocketAddr.sin_port = htons(9000);
 
-	connect(ServerSocket, (SOCKADDR*)&ServerSocketAddr, sizeof(ServerSocketAddr));
+	int retval;
+	retval = connect(ServerSocket, (SOCKADDR*)&ServerSocketAddr, sizeof(ServerSocketAddr));
+	if(retval == SOCKET_ERROR)
+	{
+		printf("Connect Error\n");
+		exit(-1);
+	}
 
 	while (true)
 	{

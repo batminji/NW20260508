@@ -53,7 +53,7 @@ int main()
 	while (true)
 	{
 		SOCKADDR_IN ClientSocketAddr;
-		memset(&ClientSocketAddr, sizeof(ClientSocketAddr), 0);
+		memset(&ClientSocketAddr, 0, sizeof(ClientSocketAddr));
 		int ClientSocketAddrLength = sizeof(ClientSocketAddr);
 
 		// Blocking
@@ -74,10 +74,12 @@ int main()
 			if (RecvBytes == 0)
 			{
 				// Connection Closed
+				printf("Client Connection Closed\n");
+				break;
 			}
 			else if (RecvBytes < 0)
 			{
-				std::cout << "Recv Error" << std::endl;
+				printf("Recv Error\n");
 				exit(-1);
 			}
 
@@ -129,8 +131,8 @@ int main()
 				SentBytes = send(ClientSocket, &Message[TotalSentBytes], WantSendBytes - TotalSentBytes, 0);
 				if (SentBytes == 0)
 				{
-					printf("Connection Closed\n");
-					exit(-1);
+					printf("Client Connection Closed\n");
+					break;
 				}
 				else if (SentBytes < 0)
 				{
