@@ -57,13 +57,13 @@ int main()
 
 		while (true)
 		{
-			PacketHeader Header;
+			PacketHeader RecvHeader;
 
 			char Buffer[1024] = { 0, };
 			// Full Duplex Communication
 			int RecvBytes;
-			int WantRecvBytes = sizeof(Header);
-			RecvBytes = recv(ClientSocket, (char*)&Header, WantRecvBytes, MSG_WAITALL);
+			int WantRecvBytes = sizeof(RecvHeader);
+			RecvBytes = recv(ClientSocket, (char*)&RecvHeader, WantRecvBytes, MSG_WAITALL);
 			if (RecvBytes == 0)
 			{
 				// Connection Closed
@@ -76,41 +76,52 @@ int main()
 				break;
 			}
 
-			Header.Size = ntohs(Header.Size);
-			Header.Code = ntohs(Header.Code);
-
-			// Process
-			TwoNumber Data;
-			RecvBytes = recv(ClientSocket, (char*)&Data, Header.Size, MSG_WAITALL);
-			if (RecvBytes == 0)
-			{
-				// Connection Closed
-				printf("Client Connection Closed\n");
-				break;
-			}
-			else if (RecvBytes < 0)
-			{
-				printf("Recv Error\n");
-				break;
-			}
-
-			Data.FirstNumber = ntohl(Data.FirstNumber);
-			Data.SecondNumber = ntohl(Data.SecondNumber);
+			RecvHeader.Size = ntohs(RecvHeader.Size);
+			RecvHeader.PacketType = ntohs(RecvHeader.PacketType);
 
 			long long Result = 0;
-			switch (static_cast<EPacketType>(Header.Code))
+
+			switch (static_cast<EPacketType>(RecvHeader.PacketType))
 			{
-			case EPacketType::Plus:				
-				Result = Data.FirstNumber + Data.SecondNumber;
-				break;
-			case EPacketType::Minus:
-				Result = Data.FirstNumber - Data.SecondNumber;
-				break;
-			case EPacketType::Multiply:
-				Result = Data.FirstNumber * Data.SecondNumber;
-				break;
-			case EPacketType::Divide:
-				Result = Data.FirstNumber / Data.SecondNumber;
+			case EPacketType::CS_Calculate:
+			{
+				CS_Calculate RecvData;
+				RecvBytes = recv(ClientSocket, (char*)&RecvData, RecvHeader.Size, MSG_WAITALL);
+				if (RecvBytes == 0)
+				{
+					// Connection Closed
+					printf("Client Connection Closed\n");
+					break;
+				}
+				else if (RecvBytes < 0)
+				{
+					printf("Recv Error\n");
+					break;
+				}
+
+				RecvData.FirstNumber = ntohl(RecvData.FirstNumber);
+				RecvData.SecondNumber = ntohl(RecvData.SecondNumber);
+				RecvData.OperationType = ntohs(RecvData.OperationType);
+
+				switch (static_cast<EOperationType>(RecvData.OperationType))
+				{
+				case EOperationType::Plus:		
+					Result = RecvData.FirstNumber + RecvData.SecondNumber; 
+					break;
+				case EOperationType::Minus:		
+					Result = RecvData.FirstNumber - RecvData.SecondNumber; 
+					break;
+				case EOperationType::Multiply:	
+					Result = (long long)RecvData.FirstNumber * RecvData.SecondNumber; 
+					break;
+				case EOperationType::Divide:
+					Result = RecvData.FirstNumber / RecvData.SecondNumber;
+					break;
+				}
+			}
+			break;
+			default:
+				printf("Unknown Packet Code\n");
 				break;
 			}
 
@@ -118,40 +129,16 @@ int main()
 			// Packet Parsing
 			// User Buffer -> OS TCP Buffer - Nagle Algorithm
 			PacketHeader SendHeader;
-			int WantSendBytes = sizeof(SendHeader);
-			int SentBytes = 0;
-			int TotalSentBytes = 0;
+			SC_Calculate SendData;
 
-			SendHeader.Size = htons(sizeof(Result));
-			SendHeader.Code = htons(static_cast<unsigned short>(EPacketType::Result));
+			SendData.Result = htonll(Result); // 엔디안 변환
 
-			do
-			{
-				SentBytes = send(ClientSocket, (char*)&SendHeader + TotalSentBytes, WantSendBytes - TotalSentBytes, 0);
-				if (SentBytes <= 0)
-				{
-					printf("Client Connection Closed\n");
-					break;
-				}
-				TotalSentBytes += SentBytes;
-			} while (TotalSentBytes < WantSendBytes);
+			SendHeader.Size = htons(sizeof(SC_Calculate));
+			SendHeader.PacketType = htons(static_cast<unsigned short>(EPacketType::SC_Calculate));
 
-			Result = htonll(Result);
+			send(ClientSocket, (char*)&SendHeader, sizeof(SendHeader), 0);
 
-			WantSendBytes = sizeof(Result);
-			SentBytes = 0;
-			TotalSentBytes = 0;
-
-			do
-			{
-				SentBytes = send(ClientSocket, (char*)&Result + TotalSentBytes, WantSendBytes - TotalSentBytes, 0);
-				if (SentBytes <= 0)
-				{
-					printf("Client Connection Closed\n");
-					break;
-				}
-				TotalSentBytes += SentBytes;
-			} while (TotalSentBytes < WantSendBytes);
+			send(ClientSocket, (char*)&SendData, sizeof(SC_Calculate), 0);
 		}
 		shutdown(ClientSocket, SD_BOTH);
 		closesocket(ClientSocket);

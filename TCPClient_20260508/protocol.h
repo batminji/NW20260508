@@ -2,7 +2,7 @@
 #ifndef __PROTOCOL_H
 #define __PROTOCOL_H
 
-enum class EPacketType : unsigned short
+enum class EOperationType : unsigned short
 {
 	Plus,
 	Minus,
@@ -12,18 +12,31 @@ enum class EPacketType : unsigned short
 	Max
 };
 
+enum class EPacketType : unsigned short
+{
+	CS_Calculate = 1,
+	SC_Calculate
+};
+
 #pragma pack(push, 1)
 struct PacketHeader
 {
 	unsigned short Size;
-	unsigned short Code;
+	unsigned short PacketType;
 };
 
-struct TwoNumber
+struct CS_Calculate
 {
 	int FirstNumber;
 	int SecondNumber;
+	unsigned short OperationType;
 };
+
+struct SC_Calculate
+{
+	long long Result;
+};
+
 #pragma pack(pop)
 
 #endif // __PROTOCOL_H
